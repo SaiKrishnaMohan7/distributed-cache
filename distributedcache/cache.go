@@ -45,6 +45,10 @@ func (cache *InMemoryCache) Get(key []byte) ([]byte, error) {
 }
 
 func (cache *InMemoryCache) Set(key, value []byte, ttl time.Duration) error {
+	if ttl < 0 {
+		return fmt.Errorf("ttl cannot be negative")
+	}
+
 	cache.lock.Lock()
 	defer cache.lock.Unlock()
 
