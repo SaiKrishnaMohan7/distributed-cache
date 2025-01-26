@@ -88,7 +88,12 @@ func (cache *InMemoryCache) Delete(key []byte) error {
 	cache.lock.Lock()
 	defer cache.lock.Unlock()
 
-	delete(cache.data, string(key))
+	_, ok := cache.data[string(key)]
 
-	return nil
+	if ok {
+		delete(cache.data, string(key))
+		return nil
+	}
+
+	return fmt.Errorf("invalid key: %s", key)
 }

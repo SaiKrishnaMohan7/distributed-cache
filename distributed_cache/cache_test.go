@@ -77,12 +77,21 @@ func Test_Delete(t *testing.T) {
 
 	_ = cache.Set(key, []byte("testDeleteValue"), 0)
 
-	cache.Delete(key)
+	_ = cache.Delete(key)
 
 	if cache.Has(key) {
 		t.Error("Deletion failed")
 	}
+
+	// Attempt to delete a non-existent key
+	nonExistentKey := []byte("nonExistentKey")
+	err := cache.Delete(nonExistentKey)
+
+	if err == nil {
+		t.Error("shouldn't be able to delete nonExistentKey")
+	}
 }
+
 func Test_SetWithZeroTTL(t *testing.T) {
 	cache := New()
 
