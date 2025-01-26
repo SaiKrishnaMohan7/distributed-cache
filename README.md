@@ -7,10 +7,16 @@ Is an caching implementation for a distributed system
 - Learn low level distributed systems
 - Learn Go
 
-## Features
+## Features to be implemented
 
 - [ ] Leader election
   - [ ] Raft or Paxos
+- [ ] Custom Protocol
+  - TCP ?
+  - UDP ?
+- [ ] Architecture
+  - [ ] Client - Server ?
+  - [ ] Peer to Peer ?
 - [ ] Consistent Hashing
 - [ ] TCP based comms between nodes
   - [ ] gRPC trial
