@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+// Cache is an interface that defines the basic operations for a distributed cache.
+// It includes methods for setting, getting, deleting, and checking the existence of keys.
 type Cache interface {
 	Set([]byte, []byte, time.Duration) error
 	Get([]byte) ([]byte, error)
@@ -14,12 +16,14 @@ type Cache interface {
 }
 
 type InMemoryCache struct {
-	lock sync.RWMutex // Concurrent read/write safety
-
 	data map[string][]byte
+	expiry map[string][]byte
+	lock sync.RWMutex // Concurrent read/write safety
+	cleanupTick time.Duration
+	stopCleanup chan struct{}
 }
 
-func New() *InMemoryCache {
+func NewCache() *InMemoryCache {
 	// This is called a constructor fn, idiomatic way
 	// to initialize a struct and encapsulate info
 	return &InMemoryCache{

@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	cache := distributedcache.New()
+	cache := distributedcache.NewCache()
 	serverOptions := cacheserver.ServerOptions{
 		ListenAddr: ":3000",
 		IsLeader:   true,
