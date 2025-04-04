@@ -18,7 +18,7 @@ type Server struct {
 	cache   distributedcache.Cache
 }
 
-func New(options ServerOptions, cache *distributedcache.InMemoryCache) *Server {
+func NewServer(options ServerOptions, cache *distributedcache.InMemoryCache) *Server {
 	return &Server{
 		options: options,
 		cache:   cache,

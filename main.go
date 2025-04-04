@@ -15,7 +15,7 @@ func main() {
 		IsLeader:   true,
 	}
 
-	server := cacheserver.New(serverOptions, cache)
+	server := cacheserver.NewServer(serverOptions, cache)
 
 	fmt.Println("Server running on", serverOptions.ListenAddr)
 	err := server.Start()
