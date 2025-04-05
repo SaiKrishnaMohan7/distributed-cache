@@ -6,8 +6,9 @@ import (
 	"time"
 )
 
+const CacheCleanupTick100ms = 100 * time.Millisecond
 func Test_Get(t *testing.T) {
-	cache := New()
+	cache := NewCache(CacheCleanupTick100ms)
 
 	// Get Key: Key Not Found
 	_, err := cache.Get([]byte("shouldErrkey"))
@@ -32,29 +33,36 @@ func Test_Get(t *testing.T) {
 	}
 }
 
-func Test_Set(t *testing.T) {
-	cache := New()
+func Test_SetWithTTL_Cleanup(t *testing.T) {
+	cache := NewCache(CacheCleanupTick100ms)
+	ttl30ms := 30 * time.Millisecond
 
-	// Set Value:
-	key := []byte("testSetKey")
-	value := []byte("testSetValue")
-	ttl := time.Microsecond * 100
-	err := cache.Set(key, value, ttl)
+	cache.StartCleanup()
+	defer cache.StopCleanup()
+
+	key := []byte("keyWithTTL")
+	value := []byte("value")
+
+	err := cache.Set(key, value, ttl30ms)
 
 	if err != nil {
-		t.Errorf("Expeced to Set key: %s, value: %s, Got: %v", key, value, err)
+		t.Fatalf("Set with TTL failed: %v", err)
 	}
 
-	// Wait for TTl to lapse
-	time.Sleep(ttl + time.Millisecond*50)
+	if !cache.Has(key) {
+		t.Fatalf("Expected key to exist right after SET, but no key: %s", key)
+	}
+
+	// Wait for the clean up to kick in
+	time.Sleep(ttl30ms + CacheCleanupTick100ms + 20*time.Millisecond)
 
 	if cache.Has(key) {
-		t.Errorf("Expected: Key removal on ttl expiry but key exists")
+		t.Fatalf("Key %s should have been deleted but is not", key)
 	}
 }
 
 func Test_Has(t *testing.T) {
-	cache := New()
+	cache := NewCache(CacheCleanupTick100ms)
 
 	key := []byte("testHasKey")
 	value := []byte("testHasValue")
@@ -71,7 +79,7 @@ func Test_Has(t *testing.T) {
 }
 
 func Test_Delete(t *testing.T) {
-	cache := New()
+	cache := NewCache(CacheCleanupTick100ms)
 
 	key := []byte("testDelete")
 
@@ -93,7 +101,7 @@ func Test_Delete(t *testing.T) {
 }
 
 func Test_SetWithZeroTTL(t *testing.T) {
-	cache := New()
+	cache := NewCache(CacheCleanupTick100ms)
 
 	key := []byte("testZeroTTLKey")
 	value := []byte("testZeroTTLValue")
@@ -109,7 +117,7 @@ func Test_SetWithZeroTTL(t *testing.T) {
 }
 
 func Test_SetWithNegativeTTL(t *testing.T) {
-	cache := New()
+	cache := NewCache(CacheCleanupTick100ms)
 
 	key := []byte("testNegativeTTLKey")
 	value := []byte("testNegativeTTLValue")
@@ -121,7 +129,7 @@ func Test_SetWithNegativeTTL(t *testing.T) {
 }
 
 func Test_ConcurrentAccess(t *testing.T) {
-	cache := New()
+	cache := NewCache(CacheCleanupTick100ms)
 	key := []byte("testConcurrentKey")
 	value := []byte("testConcurrentValue")
 
