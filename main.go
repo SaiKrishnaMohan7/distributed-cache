@@ -29,6 +29,7 @@ func main() {
 		IsLeader:   true,
 	}
 
+	cache.StartCleanup()
 	server := cacheserver.NewServer(serverOptions, cache)
 	log.Printf("Server listening on: %s", serverOptions.ListenAddr)
 

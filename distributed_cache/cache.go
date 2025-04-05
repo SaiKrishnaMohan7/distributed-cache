@@ -122,7 +122,10 @@ func (cache *InMemoryCache) StartCleanup() {
 			case <-ticker.C:
 				now := time.Now()
 
-				cache.lock.Lock()
+				if (len(cache.expiry) != 0) {
+					// nothing to clean, no work needed
+					cache.lock.Lock()
+				}
 
 				for key, expiry := range cache.expiry {
 					if (now.After(expiry)) {
