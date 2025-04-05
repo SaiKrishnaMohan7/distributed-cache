@@ -2,24 +2,40 @@ package main
 
 import (
 	"log"
+	"os"
+	"strconv"
 	"time"
 
 	cacheserver "github.com/saikrishnamohan7/distributed-cache/cache_server"
+	"github.com/saikrishnamohan7/distributed-cache/config"
 	distributedcache "github.com/saikrishnamohan7/distributed-cache/distributed_cache"
 )
 
 func main() {
-	cache := distributedcache.NewCache(time.Second) // TODO: read from env var
+	err := config.LoadDotEnv("./.env")
+	if err != nil {
+		log.Fatalf("Unexpected error loading env vars: %v", err)
+	}
+
+	tickMs, err :=  strconv.Atoi(os.Getenv("CACHE_CLEANUP_TICK"))
+	if err != nil {
+		log.Fatalf("invalid CACHE_CLEANUP_TICK: %v", err)
+	}
+
+	cleanupTick := time.Duration(tickMs) * time.Millisecond
+	cache := distributedcache.NewCache(cleanupTick)
 	serverOptions := cacheserver.ServerOptions{
-		ListenAddr: ":3000", // TODO: pick this from the env OR default to this. Good use case for direnv
+		ListenAddr: os.Getenv("PORT"),
 		IsLeader:   true,
 	}
 
 	server := cacheserver.NewServer(serverOptions, cache)
+	log.Printf("Server listening on: %s", serverOptions.ListenAddr)
 
-	log.Printf("Server running on: %s", serverOptions.ListenAddr)
-	err := server.Start()
+	err = server.Start()
 	if err != nil {
 		log.Fatal(err)
 	}
 }
+
+

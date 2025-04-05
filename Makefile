@@ -26,6 +26,10 @@ lint:
 	@echo "Running linters..."
 	golangci-lint run
 
+run: build
+	@echo "Running the application..."
+	./bin/distributed-cache
+
 help:
 	@echo "Available targets:"
 	@echo "  build      Build the application"
