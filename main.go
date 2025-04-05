@@ -3,7 +3,9 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	cacheserver "github.com/saikrishnamohan7/distributed-cache/cache_server"
@@ -31,12 +33,25 @@ func main() {
 
 	cache.StartCleanup()
 	server := cacheserver.NewServer(serverOptions, cache)
-	log.Printf("Server listening on: %s", serverOptions.ListenAddr)
 
-	err = server.Start()
-	if err != nil {
-		log.Fatal(err)
-	}
+	// Start server in go routine so that I can handle graceful shutdown
+	go func(){
+		log.Printf("Server listening on: %s", serverOptions.ListenAddr)
+		err = server.Start()
+		if err != nil {
+			log.Fatalf("Error staring server: %v", err)
+		}
+	}()
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	<-stop // Block! Wait for SIGINT or SIGTERM
+
+	log.Printf("Shutting down cache server gracefully")
+	log.Print("Stopping cache clean up")
+
+	cache.StopCleanup()
 }
 
 
