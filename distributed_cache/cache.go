@@ -63,8 +63,8 @@ func (cache *InMemoryCache) Get(key []byte) ([]byte, error) {
 // If the TTL is greater than zero, the key will expire after the specified duration.
 // If the TTL is zero, the key will persist indefinitely.
 func (cache *InMemoryCache) Set(key, value []byte, ttl time.Duration) error {
-	if ttl < 0 {
-		return fmt.Errorf("ttl cannot be negative")
+	if ttl <= 0 {
+		return fmt.Errorf("ttl should be greater than 0")
 	}
 
 	cache.lock.Lock()

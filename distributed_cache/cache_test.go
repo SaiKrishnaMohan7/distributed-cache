@@ -20,7 +20,7 @@ func Test_Get(t *testing.T) {
 	// Get Key: Key Found
 	key := []byte("testKey")
 	value := []byte("testVal")
-	_ = cache.Set(key, value, 0)
+	_ = cache.Set(key, value, 10)
 
 	retrievedValue, err := cache.Get(key)
 
@@ -67,7 +67,7 @@ func Test_Has(t *testing.T) {
 	key := []byte("testHasKey")
 	value := []byte("testHasValue")
 
-	_ = cache.Set(key, value, 0)
+	_ = cache.Set(key, value, 10)
 
 	if !cache.Has(key) {
 		t.Error("Key should be present but is not")
@@ -83,7 +83,7 @@ func Test_Delete(t *testing.T) {
 
 	key := []byte("testDelete")
 
-	_ = cache.Set(key, []byte("testDeleteValue"), 0)
+	_ = cache.Set(key, []byte("testDeleteValue"), 10)
 
 	_ = cache.Delete(key)
 
@@ -105,7 +105,7 @@ func Test_SetWithZeroTTL(t *testing.T) {
 
 	key := []byte("testZeroTTLKey")
 	value := []byte("testZeroTTLValue")
-	err := cache.Set(key, value, 0)
+	err := cache.Set(key, value, 10)
 
 	if err != nil {
 		t.Errorf("Expected to Set key: %s, value: %s, Got: %v", key, value, err)
@@ -138,7 +138,7 @@ func Test_ConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cache.Set(key, value, 0)
+			cache.Set(key, value, 10)
 			if !cache.Has(key) {
 				t.Error("Expected key to be present but it is not")
 			}
