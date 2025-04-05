@@ -18,13 +18,17 @@ type Server struct {
 	cache   distributedcache.Cache
 }
 
-func New(options ServerOptions, cache *distributedcache.InMemoryCache) *Server {
+func NewServer(options ServerOptions, cache *distributedcache.InMemoryCache) *Server {
 	return &Server{
 		options: options,
 		cache:   cache,
 	}
 }
 
+// ✅ NOTE: http.ListenAndServe is blocking; keeps main goroutine alive
+// ✅ Each HTTP handler runs in its own goroutine (server is concurrent)
+// TODO: Call cache.StartCleanup() before starting server
+// TODO: Consider exposing a Stop() method to shut down cleanup gracefully
 func (server *Server) Start() error {
 	http.HandleFunc("/get", server.handleGetCommand)       // HTTP GET
 	http.HandleFunc("/set", server.handleSetCommand)       // HTTP POST
