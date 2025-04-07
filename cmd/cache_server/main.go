@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	cacheserver "github.com/saikrishnamohan7/distributed-cache/cache_server"
 	"github.com/saikrishnamohan7/distributed-cache/config"
-	districache "github.com/saikrishnamohan7/distributed-cache/distributed_cache"
+	districache "github.com/saikrishnamohan7/distributed-cache/internal/cache" // should match go.mod, the "github.com/saikrishnamohan7/distributed-cache.. part. If go.mod changes, this changes too
+	cacheserver "github.com/saikrishnamohan7/distributed-cache/internal/server"
 )
 
 func main() {
