@@ -23,8 +23,7 @@ Is an caching implementation for a distributed system
   - [ ] gRPC trial
 - [ ] Persistence (maybe)
   - [ ] A hybrid between AOL (append only log) and snapshot so that log file compaction we don't need to worry about
-
-- [ ] Logging
+- [x] Logging
 - ~~Centralized Error Handling~~
 - [ ] Telemetry (maybe)
 - [ ] Metrics (maybe)

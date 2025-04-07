@@ -109,6 +109,12 @@ func (cache *InMemoryCache) Delete(key []byte) error {
 	return fmt.Errorf("invalid key: %s", key)
 }
 
+// TODO: Replace linear TTL scan with Timer Wheel pattern for efficient key expiry
+// - Reduces CPU usage for large caches
+// - Allows O(1) expiry checks
+// - Needed when supporting high key volume with varied TTLs
+
+
 // StartCleanup initiates a periodic cleanup process to remove expired keys from the cache.
 // It runs in a separate goroutine and stops when StopCleanup is called.
 func (cache *InMemoryCache) StartCleanup() {
