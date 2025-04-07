@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	distcache "github.com/saikrishnamohan7/distributed-cache/distributed_cache"
+	distcache "github.com/saikrishnamohan7/distributed-cache/internal/cache"
 )
 
 // Server is
