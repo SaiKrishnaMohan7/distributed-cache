@@ -122,12 +122,13 @@ func (cache *InMemoryCache) StartCleanup() {
 			case <-ticker.C:
 				now := time.Now()
 
+				cache.lock.Lock()
 				if len(cache.expiry) == 0 {
+					cache.lock.Unlock()
 					// nothing to clean, no work needed
 					continue
 				}
 
-				cache.lock.Lock()
 				for key, expiry := range cache.expiry {
 					if now.After(expiry) {
 						delete(cache.data, key)
@@ -135,7 +136,7 @@ func (cache *InMemoryCache) StartCleanup() {
 						log.Printf("Deleted key: %s", key)
 					}
 				}
-				// we want to release lock BEFORE the goroutine is done.
+				// we want to release lock BEFORE the goroutine is done. So, no defer
 				// ensures locks are not held any longer than they have to
 				cache.lock.Unlock()
 			case <-cache.stopCleanup:

@@ -14,6 +14,10 @@ test:
 	@echo "Running tests..."
 	go test ./...
 
+# Run tests with race detector
+test-race:
+	go test -race ./...
+
 clean:
 	@echo "Cleaning up..."
 	rm -rf bin/
