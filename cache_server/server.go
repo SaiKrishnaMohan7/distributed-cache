@@ -1,37 +1,55 @@
 package cacheserver
 
 import (
+	"context"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
-	distributedcache "github.com/saikrishnamohan7/distributed-cache/distributed_cache"
+	distcache "github.com/saikrishnamohan7/distributed-cache/distributed_cache"
 )
 
-type ServerOptions struct {
-	ListenAddr string
-	IsLeader   bool
-}
-
+// Server is
 type Server struct {
-	options ServerOptions
-	cache   distributedcache.Cache
+	cache      *distcache.InMemoryCache
+	httpServer *http.Server
 }
 
-func NewServer(options ServerOptions, cache *distributedcache.InMemoryCache) *Server {
-	return &Server{
-		options: options,
-		cache:   cache,
+// NewServer is a constructor fn
+func NewServer(cache *distcache.InMemoryCache, port string) *Server {
+	mux := http.NewServeMux()
+	server := &Server{
+		cache: cache,
 	}
+
+	// Routing
+	mux.HandleFunc("/get", server.handleGetCommand)       // HTTP GET
+	mux.HandleFunc("/set", server.handleSetCommand)       // HTTP POST
+	mux.HandleFunc("/has", server.handleHasCommand)       // HTTP GET
+	mux.HandleFunc("/delete", server.handleDeleteCommand) // HTTP DELETE
+
+	server.httpServer = &http.Server{
+		Addr:    port,
+		Handler: mux,
+	}
+
+	return server
 }
 
+// Start starts the server
 func (server *Server) Start() error {
-	http.HandleFunc("/get", server.handleGetCommand)       // HTTP GET
-	http.HandleFunc("/set", server.handleSetCommand)       // HTTP POST
-	http.HandleFunc("/has", server.handleHasCommand)       // HTTP GET
-	http.HandleFunc("/delete", server.handleDeleteCommand) // HTTP DELETE
+	log.Println("Starting server on ", server.httpServer.Addr)
+	return server.httpServer.ListenAndServe()
+}
 
-	return http.ListenAndServe(":3000", nil)
+// Shutdown handles graceful wind down of server
+func (server *Server) Shutdown(ctx context.Context) error {
+	log.Println("Gracefully shutting down server")
+	log.Println("Signalling Cache Clean up stoppage")
+	server.cache.StopCleanup()
+
+	return server.httpServer.Shutdown(ctx)
 }
 
 func (server *Server) handleGetCommand(responseWriter http.ResponseWriter, req *http.Request) {
@@ -49,6 +67,8 @@ func (server *Server) handleGetCommand(responseWriter http.ResponseWriter, req *
 		return
 	}
 
+	log.Printf("Received GET request for key: %s", key)
+
 	responseWriter.Write(value)
 }
 
@@ -64,17 +84,10 @@ func (server *Server) handleSetCommand(responseWriter http.ResponseWriter, req *
 	value := req.Body
 	defer value.Close()
 
-	ttl := 0 * time.Second
-	if ttlStr == "" {
-		ttl = 0
-	} else {
-		parsedTTL, err := time.ParseDuration(ttlStr)
-		if err != nil {
-			http.Error(responseWriter, "Invalid TTL", http.StatusBadRequest)
-			return
-		}
-
-		ttl = parsedTTL
+	parsedTTL, err := time.ParseDuration(ttlStr)
+	if err != nil {
+		http.Error(responseWriter, "Invalid TTL", http.StatusBadRequest)
+		return
 	}
 
 	buf, err := io.ReadAll(value)
@@ -83,7 +96,12 @@ func (server *Server) handleSetCommand(responseWriter http.ResponseWriter, req *
 		return
 	}
 
-	server.cache.Set([]byte(key), buf, ttl)
+	log.Printf("Received SET request with Key: %s, value: %s and TTL: %s", key, buf, ttlStr)
+
+	if err := server.cache.Set([]byte(key), buf, parsedTTL); err != nil {
+		http.Error(responseWriter, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	responseWriter.WriteHeader(http.StatusOK)
 }
 
@@ -95,6 +113,7 @@ func (server *Server) handleHasCommand(responseWriter http.ResponseWriter, req *
 		return
 	}
 
+	log.Printf("Received, HAS request for key: %s", key)
 	hasKey := server.cache.Has([]byte(key))
 
 	if hasKey {
@@ -114,6 +133,7 @@ func (server *Server) handleDeleteCommand(responseWriter http.ResponseWriter, re
 		http.Error(responseWriter, "Invalid Key", http.StatusBadRequest)
 		return
 	}
+	log.Printf("Received, DELETE request for key: %s", key)
 
 	keyByte := []byte(key)
 

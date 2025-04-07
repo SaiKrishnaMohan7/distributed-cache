@@ -7,6 +7,7 @@ import (
 )
 
 const CacheCleanupTick100ms = 100 * time.Millisecond
+
 func Test_Get(t *testing.T) {
 	cache := NewCache(CacheCleanupTick100ms)
 

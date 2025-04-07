@@ -2,25 +2,24 @@ package distributedcache
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"time"
 )
 
-// Cache is an interface that defines the basic operations for a distributed cache.
-// It includes methods for setting, getting, deleting, and checking the existence of keys.
-type Cache interface {
+type cache interface {
 	Set([]byte, []byte, time.Duration) error
 	Get([]byte) ([]byte, error)
 	Delete([]byte) error
 	Has([]byte) bool
 }
 
-// InMemoryCache is an in-memory implementation of the Cache interface.
+// InMemoryCache is an in-memory implementation of the cache interface.
 // It provides thread-safe operations and supports key expiration with cleanup.
 type InMemoryCache struct {
-	data map[string][]byte
-	expiry map[string]time.Time
-	lock sync.RWMutex // Concurrent read/write safety
+	data        map[string][]byte
+	expiry      map[string]time.Time
+	lock        sync.RWMutex // Concurrent read/write safety
 	cleanupTick time.Duration
 	stopCleanup chan struct{}
 }
@@ -32,8 +31,8 @@ func NewCache(cleanupTick time.Duration) *InMemoryCache {
 	// This is called a constructor fn, idiomatic way
 	// to initialize a struct and encapsulate info
 	return &InMemoryCache{
-		data: make(map[string][]byte),
-		expiry: make(map[string]time.Time),
+		data:        make(map[string][]byte),
+		expiry:      make(map[string]time.Time),
 		cleanupTick: cleanupTick,
 		stopCleanup: make(chan struct{}),
 	}
@@ -55,13 +54,14 @@ func (cache *InMemoryCache) Get(key []byte) ([]byte, error) {
 		return nil, fmt.Errorf("key (%s) not found", keyStr)
 	}
 
+	log.Printf("Getting key: %s", key)
+
 	return value, nil
 
 }
 
 // Set stores a key-value pair in the cache with an optional time-to-live (TTL).
-// If the TTL is greater than zero, the key will expire after the specified duration.
-// If the TTL is zero, the key will persist indefinitely.
+// TTL > 0 always
 func (cache *InMemoryCache) Set(key, value []byte, ttl time.Duration) error {
 	if ttl <= 0 {
 		return fmt.Errorf("ttl should be greater than 0")
@@ -73,12 +73,9 @@ func (cache *InMemoryCache) Set(key, value []byte, ttl time.Duration) error {
 	keyStr := string(key)
 
 	cache.data[keyStr] = value
+	cache.expiry[keyStr] = time.Now().Add(ttl)
 
-	if ttl > 0 {
-		cache.expiry[keyStr] = time.Now().Add(ttl)
-	} else {
-		delete(cache.expiry, keyStr)
-	}
+	log.Printf("Created key: %s | Expires at: %s", keyStr, cache.expiry[keyStr].Format(time.RFC3339))
 
 	return nil
 }
@@ -105,6 +102,7 @@ func (cache *InMemoryCache) Delete(key []byte) error {
 
 	if ok {
 		delete(cache.data, string(key))
+		log.Printf("Deleted key: %s", key)
 		return nil
 	}
 
@@ -116,27 +114,32 @@ func (cache *InMemoryCache) Delete(key []byte) error {
 func (cache *InMemoryCache) StartCleanup() {
 	ticker := time.NewTicker(cache.cleanupTick)
 
-	go func () {
+	log.Println("Setting up Cleanup...")
+
+	go func() {
 		for {
 			select {
 			case <-ticker.C:
 				now := time.Now()
 
-				if (len(cache.expiry) != 0) {
+				if len(cache.expiry) == 0 {
 					// nothing to clean, no work needed
-					cache.lock.Lock()
+					continue
 				}
 
+				cache.lock.Lock()
 				for key, expiry := range cache.expiry {
-					if (now.After(expiry)) {
+					if now.After(expiry) {
 						delete(cache.data, key)
 						delete(cache.expiry, key)
+						log.Printf("Deleted key: %s", key)
 					}
 				}
 				// we want to release lock BEFORE the goroutine is done.
 				// ensures locks are not held any longer than they have to
 				cache.lock.Unlock()
 			case <-cache.stopCleanup:
+				log.Println("SIGNAL to stop received, stopping...")
 				ticker.Stop()
 				return
 			}
@@ -147,5 +150,7 @@ func (cache *InMemoryCache) StartCleanup() {
 // StopCleanup stops the periodic cleanup process by closing the stopCleanup channel.
 // This ensures that the cleanup goroutine terminates gracefully.
 func (cache *InMemoryCache) StopCleanup() {
+	log.Println("Stopping Clean up...")
+
 	close(cache.stopCleanup)
 }

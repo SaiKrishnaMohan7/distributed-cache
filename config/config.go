@@ -43,3 +43,9 @@ func LoadDotEnv(path string) error {
 
 	return scanner.Err()
 }
+
+// InitLogger initializes the logger with specific flags for detailed logging.
+func InitLogger() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	log.Printf("Logger initialized!")
+}
