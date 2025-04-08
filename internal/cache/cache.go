@@ -17,11 +17,11 @@ type cache interface {
 // InMemoryCache is an in-memory implementation of the cache interface.
 // It provides thread-safe operations and supports key expiration with cleanup.
 type InMemoryCache struct {
+	stopCleanup chan struct{}
 	data        map[string][]byte
 	expiry      map[string]time.Time
-	lock        sync.RWMutex // Concurrent read/write safety
 	cleanupTick time.Duration
-	stopCleanup chan struct{}
+	lock        sync.RWMutex // Concurrent read/write safety
 }
 
 // NewCache creates a new instance of InMemoryCache with a specified cleanup interval.
