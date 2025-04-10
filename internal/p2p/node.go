@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"time"
@@ -10,6 +11,11 @@ import (
 	districache "github.com/saikrishnamohan7/distributed-cache/internal/cache"
 )
 
+type node interface {
+	Start()
+	Stop()
+	ConnectToPeer(addr string) error
+}
 type Node struct {
 	listener net.Listener // 8 bytes pointer
 	cache   *districache.InMemoryCache // 8 bytes pointer
@@ -68,4 +74,21 @@ func (node *Node) Stop() {
 	node.cache.StopCleanup()
 	close(node.stop)
 	node.listener.Close()
+}
+
+func (node *Node) ConnectToPeer(addr string) error {
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return fmt.Errorf("failed to connect to peer %s: %w", addr, err)
+	}
+	defer conn.Close()
+
+	log.Printf("Connected to Peer at %s", addr)
+
+	_, err = conn.Write([]byte("HELLO FROM PEER\n"))
+	if err != nil {
+		return fmt.Errorf("failed to send hello to peer %s: %w", addr, err)
+	}
+
+	return nil
 }
