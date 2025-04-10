@@ -2,6 +2,9 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/saikrishnamohan7/distributed-cache/internal/p2p"
@@ -14,6 +17,11 @@ func main() {
 
 	go node.Start()
 
-	time.Sleep(10 * time.Second)
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	<-stop // wait for SIGINT or SIGTERM
+
+	log.Println("Propagating shutdown signal...")
 	node.Stop()
 }

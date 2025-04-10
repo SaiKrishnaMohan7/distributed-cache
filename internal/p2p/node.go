@@ -64,7 +64,8 @@ func handleConnection(conn net.Conn) {
 }
 
 func (node *Node) Stop() {
-	log.Printf("Stop received, Stopping...")
+	log.Printf("Stop received, Stopping Node...")
+	node.cache.StopCleanup()
 	close(node.stop)
 	node.listener.Close()
 }
