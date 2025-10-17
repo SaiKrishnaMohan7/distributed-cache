@@ -15,7 +15,14 @@ type cache interface {
 }
 
 // InMemoryCache is an in-memory implementation of the cache interface.
-// It provides thread-safe operations and supports key expiration with cleanup.
+// It provides thread-safe operations using sync.RWMutex and supports key expiration.
+//
+// TTL Behavior:
+// - Set() accepts a TTL duration; keys expire after this time
+// - Get() enforces strict TTL - expired keys return an error immediately
+// - Background cleanup removes expired keys to reclaim memory (see StartCleanup)
+//
+// Concurrency: All operations are safe for concurrent use.
 type InMemoryCache struct {
 	stopCleanup chan struct{}
 	data        map[string][]byte
@@ -27,6 +34,15 @@ type InMemoryCache struct {
 // NewCache creates a new instance of InMemoryCache with a specified cleanup interval.
 // The cleanupTick parameter defines the duration between periodic cleanup operations
 // to remove expired items from the cache.
+//
+// Cleanup Timing: Keys are deleted within one cleanupTick duration after expiration.
+// The cleanupTick should be tuned based on:
+// - Memory pressure: Shorter tick = faster memory reclamation
+// - CPU usage: Longer tick = less frequent scanning overhead
+// - TTL precision needs: For sub-second TTL accuracy, use 100-500ms ticks
+//
+// Note: Get() always checks expiry, so TTL is strictly enforced regardless of cleanup timing.
+// Cleanup is purely for memory reclamation.
 func NewCache(cleanupTick time.Duration) *InMemoryCache {
 	// This is called a constructor fn, idiomatic way
 	// to initialize a struct and encapsulate info
@@ -41,6 +57,7 @@ func NewCache(cleanupTick time.Duration) *InMemoryCache {
 // Get retrieves the value associated with the given key from the in-memory cache.
 // If the key exists, it returns the corresponding value and a nil error.
 // If the key does not exist, it returns a nil value and an error.
+
 func (cache *InMemoryCache) Get(key []byte) ([]byte, error) {
 	// Acquire a read lock
 	cache.lock.RLock()
@@ -52,6 +69,13 @@ func (cache *InMemoryCache) Get(key []byte) ([]byte, error) {
 
 	if !ok {
 		return nil, fmt.Errorf("key (%s) not found", keyStr)
+	}
+
+	// Note: Expired keys are also removed by background cleanup (see StartCleanup).
+	// This check ensures strict TTL guarantees regardless of cleanup timing.
+	expiry, exists := cache.expiry[keyStr]
+	if exists && time.Now().After(expiry) {
+		return nil, fmt.Errorf("key, %s, has expired", keyStr)
 	}
 
 	log.Printf("Getting key: %s", key)
@@ -83,8 +107,8 @@ func (cache *InMemoryCache) Set(key, value []byte, ttl time.Duration) error {
 // Has checks if a given key exists in the cache.
 // It returns true if the key is present, otherwise false.
 func (cache *InMemoryCache) Has(key []byte) bool {
-	cache.lock.Lock()
-	defer cache.lock.Unlock()
+	cache.lock.RLock()
+	defer cache.lock.RUnlock()
 
 	_, ok := cache.data[string(key)]
 

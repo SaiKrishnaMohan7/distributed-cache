@@ -29,3 +29,28 @@ Is an caching implementation for a distributed system
 - [ ] Metrics (maybe)
 - [ ] Tests
   - [ ] Scale tests
+
+## TTL and Cleanup Behavior
+
+### How TTL Works
+
+- When you `Set()` a key with a TTL, it expires after that duration
+- `Get()` will return an error for expired keys immediately (strict guarantee)
+- Background cleanup removes expired keys from memory periodically
+
+### Configuring Cleanup
+
+Set `CACHE_CLEANUP_TICK` environment variable to control cleanup frequency:
+
+```bash
+CACHE_CLEANUP_TICK=1000  # Run cleanup every 1 second (1000ms)
+```
+
+**Tuning Guidelines:**
+
+- **High TTL precision needs**: 100-500ms (e.g., sub-second TTLs)
+- **Balanced**: 1000-5000ms (default recommendation)
+- **Low memory pressure**: 10000-60000ms (cleanup less often)
+
+**Note:** Cleanup timing only affects when memory is freed, not when keys become inaccessible.
+TTL is always strictly enforced by `Get()`.
