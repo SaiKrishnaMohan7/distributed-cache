@@ -18,7 +18,7 @@ type node interface {
 }
 type Node struct {
 	listener net.Listener // 8 bytes pointer
-	cache   *districache.InMemoryCache // 8 bytes pointer
+	cache   districache.Cache // 8 bytes pointer
 	stop chan struct{} // 8 bytes pointer
 	peers   []*Node // like a graph node; 8 bytes slice of pointers
 	id      string // 16 bytes

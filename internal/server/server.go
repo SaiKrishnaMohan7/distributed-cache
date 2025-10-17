@@ -12,12 +12,12 @@ import (
 
 // Server is
 type Server struct {
-	cache      *distcache.InMemoryCache
+	cache      distcache.Cache
 	httpServer *http.Server
 }
 
 // NewServer is a constructor fn
-func NewServer(cache *distcache.InMemoryCache, port string) *Server {
+func NewServer(cache distcache.Cache, port string) *Server {
 	mux := http.NewServeMux()
 	server := &Server{
 		cache: cache,

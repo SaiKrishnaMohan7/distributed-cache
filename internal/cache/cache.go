@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type cache interface {
+type Cache interface {
 	Set([]byte, []byte, time.Duration) error
 	Get([]byte) ([]byte, error)
 	Delete([]byte) error
