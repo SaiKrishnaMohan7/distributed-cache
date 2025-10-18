@@ -30,8 +30,11 @@ func NewServer(cache distcache.Cache, port string) *Server {
 	mux.HandleFunc("/delete", server.handleDeleteCommand) // HTTP DELETE
 
 	server.httpServer = &http.Server{
-		Addr:    port,
-		Handler: mux,
+		Addr:         port,
+		Handler:      mux,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
 	return server
@@ -81,8 +84,10 @@ func (server *Server) handleSetCommand(responseWriter http.ResponseWriter, req *
 		return
 	}
 
-	value := req.Body
-	defer value.Close()
+	// Shift left by N bits is equivalent to multiplying by 2^N
+	// Limiting body size to 10 MB (10 * 2^20)
+	req.Body = http.MaxBytesReader(responseWriter, req.Body, 10<<20)
+	defer req.Body.Close()
 
 	parsedTTL, err := time.ParseDuration(ttlStr)
 	if err != nil {
@@ -90,7 +95,7 @@ func (server *Server) handleSetCommand(responseWriter http.ResponseWriter, req *
 		return
 	}
 
-	buf, err := io.ReadAll(value)
+	buf, err := io.ReadAll(req.Body)
 	if err != nil {
 		http.Error(responseWriter, "Failed to read body", http.StatusInternalServerError)
 		return
