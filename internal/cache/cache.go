@@ -12,6 +12,8 @@ type Cache interface {
 	Get([]byte) ([]byte, error)
 	Delete([]byte) error
 	Has([]byte) bool
+	StartCleanup()
+	StopCleanup()
 }
 
 // InMemoryCache is an in-memory implementation of the cache interface.
@@ -137,7 +139,6 @@ func (cache *InMemoryCache) Delete(key []byte) error {
 // - Reduces CPU usage for large caches
 // - Allows O(1) expiry checks
 // - Needed when supporting high key volume with varied TTLs
-
 
 // StartCleanup initiates a periodic cleanup process to remove expired keys from the cache.
 // It runs in a separate goroutine and stops when StopCleanup is called.
