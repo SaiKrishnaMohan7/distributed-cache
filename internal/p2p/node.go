@@ -11,16 +11,11 @@ import (
 	districache "github.com/saikrishnamohan7/distributed-cache/internal/cache"
 )
 
-type node interface {
-	Start()
-	Stop()
-	ConnectToPeer(addr string) error
-}
 type Node struct {
 	listener net.Listener // 8 bytes pointer
 	cache   districache.Cache // 8 bytes pointer
-	stop chan struct{} // 8 bytes pointer
-	peers   []*Node // like a graph node; 8 bytes slice of pointers
+	stop    chan struct{} // 8 bytes pointer
+	peers   []*Peer // like a graph node; 8 bytes slice of pointers
 	id      string // 16 bytes
 	address string // this node's own address: ip:port; 16 bytes
 }

@@ -22,7 +22,15 @@ func main() {
 		log.Fatalf("Unexpected error loading env vars: %v", err)
 	}
 
-	tickMs, err := strconv.Atoi(os.Getenv("CACHE_CLEANUP_TICK"))
+	tickMs := 5000
+	tickMsStr := os.Getenv("CACHE_CLEANUP_TICK")
+	if tickMsStr != "" {
+		var err error
+		tickMs, err = strconv.Atoi(tickMsStr)
+		if err != nil {
+			log.Fatalf("invalid CACHE_CLEANUP_TICK: %v", err)
+		}
+	}
 	if err != nil {
 		log.Fatalf("invalid CACHE_CLEANUP_TICK: %v", err)
 	}
@@ -30,12 +38,21 @@ func main() {
 	cleanupTick := time.Duration(tickMs) * time.Millisecond
 	cache := districache.NewCache(cleanupTick)
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = ":42069"
+	}
+	if !strings.HasPrefix(port, ":") {
+		port = ":" + port
+	}
+
 	cache.StartCleanup()
-	server := cacheserver.NewServer(cache, os.Getenv("PORT"))
+	server := cacheserver.NewServer(cache, port)
 
 	// Start server in go routine so that I can handle graceful shutdown
 	go func() {
-		if err = server.Start(); err != nil && err != http.ErrServerClosed {
+		err = server.Start()
+		if err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Error starting server: %v", err)
 		}
 	}()
