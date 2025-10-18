@@ -72,7 +72,10 @@ func (server *Server) handleGetCommand(responseWriter http.ResponseWriter, req *
 
 	log.Printf("Received GET request for key: %s", key)
 
-	responseWriter.Write(value)
+	_, err = responseWriter.Write(value)
+	if err != nil {
+		log.Printf("Error writing response: %v", err)
+	}
 }
 
 func (server *Server) handleSetCommand(responseWriter http.ResponseWriter, req *http.Request) {
@@ -103,7 +106,8 @@ func (server *Server) handleSetCommand(responseWriter http.ResponseWriter, req *
 
 	log.Printf("Received SET request with Key: %s, value: %s and TTL: %s", key, buf, ttlStr)
 
-	if err := server.cache.Set([]byte(key), buf, parsedTTL); err != nil {
+	err = server.cache.Set([]byte(key), buf, parsedTTL)
+	if err != nil {
 		http.Error(responseWriter, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -121,14 +125,20 @@ func (server *Server) handleHasCommand(responseWriter http.ResponseWriter, req *
 	log.Printf("Received, HAS request for key: %s", key)
 	hasKey := server.cache.Has([]byte(key))
 
+	// Always return 200 - the body tells you if key exists
+	responseWriter.Header().Set("Content-Type", "application/json")
+	responseWriter.WriteHeader(http.StatusOK)
+
+	var response []byte
 	if hasKey {
-		responseWriter.WriteHeader(http.StatusOK)
-		responseWriter.Write([]byte("true"))
+		response = []byte(`{"exists": true}`)
 	} else {
-		responseWriter.WriteHeader(http.StatusNotFound)
-		responseWriter.Write([]byte("false"))
+		response = []byte(`{"exists": false}`)
 	}
 
+	if _, err := responseWriter.Write(response); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
 }
 
 func (server *Server) handleDeleteCommand(responseWriter http.ResponseWriter, req *http.Request) {
@@ -142,7 +152,11 @@ func (server *Server) handleDeleteCommand(responseWriter http.ResponseWriter, re
 
 	keyByte := []byte(key)
 
-	server.cache.Delete(keyByte)
+	err := server.cache.Delete(keyByte)
+	if err != nil {
+		http.Error(responseWriter, "Failed to delete key", http.StatusInternalServerError)
+		return
+	}
 
 	responseWriter.WriteHeader(http.StatusOK)
 }

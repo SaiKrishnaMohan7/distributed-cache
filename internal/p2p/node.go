@@ -15,9 +15,10 @@ type Node struct {
 	listener net.Listener      // 8 bytes pointer
 	cache    districache.Cache // 8 bytes pointer
 	stop     chan struct{}     // 8 bytes pointer
-	peers    []*Peer           // like a graph node; 8 bytes slice of pointers
-	id       string            // 16 bytes
-	address  string            // this node's own address: ip:port; 16 bytes
+	// TODO: implement peer management
+	// peers   []*Peer // like a graph node; 8 bytes slice of pointers
+	id      string // 16 bytes
+	address string // this node's own address: ip:port; 16 bytes
 }
 
 func NewNode(cleanupTick time.Duration, address string) (*Node, error) {
@@ -61,7 +62,10 @@ func (node *Node) Start() {
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
-	conn.Write([]byte("Hello!"))
+	_, err := conn.Write([]byte("Hello!"))
+	if err != nil {
+		log.Printf("Error writing to connection: %v", err)
+	}
 }
 
 func (node *Node) Stop() {

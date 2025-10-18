@@ -139,6 +139,7 @@ func Test_ConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			// nolint:errcheck
 			cache.Set(key, value, 10)
 			if !cache.Has(key) {
 				t.Error("Expected key to be present but it is not")
