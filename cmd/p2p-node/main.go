@@ -9,8 +9,9 @@ import (
 
 	"github.com/saikrishnamohan7/distributed-cache/internal/p2p"
 )
+
 func main() {
-	node, err := p2p.NewNode( 2*time.Second, ":4000")
+	node, err := p2p.NewNode(2*time.Second, ":4000")
 	if err != nil {
 		log.Fatalf("Failed to start node: %v", err)
 	}
