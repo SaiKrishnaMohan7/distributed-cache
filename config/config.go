@@ -16,7 +16,12 @@ func LoadDotEnv(path string) error {
 
 	log.Printf("loading .env at path: %s", path)
 
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			log.Fatalf("Failed to close file: %v", err)
+		}
+	}()
 
 	scanner := bufio.NewScanner(file)
 

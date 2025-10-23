@@ -4,6 +4,26 @@ BIN_DIR := bin
 
 .PHONY: build run test clean build-p2p run-p2p fmt lint tidy test-race test-coverage lint-fix check help
 
+install-tools:
+	@echo "🔧 Installing development tools..."
+	# Linting & Formatting
+	@command -v golangci-lint >/dev/null 2>&1 || go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	@command -v goimports >/dev/null 2>&1 || go install golang.org/x/tools/cmd/goimports@latest
+	@command -v staticcheck >/dev/null 2>&1 || go install honnef.co/go/tools/cmd/staticcheck@latest
+	# Language Server
+	@command -v gopls >/dev/null 2>&1 || go install golang.org/x/tools/gopls@latest
+	# Code Generation
+	@command -v impl >/dev/null 2>&1 || go install github.com/josharian/impl@latest
+	@command -v gotests >/dev/null 2>&1 || go install github.com/cweill/gotests/gotests@latest
+	# Debugging
+	@command -v dlv >/dev/null 2>&1 || go install github.com/go-delve/delve/cmd/dlv@latest
+	# Utilities
+	@command -v goplay >/dev/null 2>&1 || go install github.com/haya14busa/goplay/cmd/goplay@latest
+	@command -v pre-commit >/dev/null 2>&1 || brew install pre-commit
+	# Reshim if using asdf
+	@if command -v asdf >/dev/null 2>&1; then asdf reshim golang; fi
+	@echo "✅ All tools installed"
+
 build:
 	@echo "🔨 Building $(APP_NAME)..."
 	@mkdir -p $(BIN_DIR)
@@ -48,7 +68,7 @@ fmt:
 
 lint:
 	@echo "🔍 Running linters..."
-	golangci-lint run
+	pre-commit run --all-files
 
 lint-fix:
 	@echo "🔧 Running linters with auto-fix..."

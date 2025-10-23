@@ -61,7 +61,13 @@ func (node *Node) Start() {
 }
 
 func handleConnection(conn net.Conn) {
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			log.Fatalf("Failed to close connection: %v", err)
+		}
+	}()
+
 	_, err := conn.Write([]byte("Hello!"))
 	if err != nil {
 		log.Printf("Error writing to connection: %v", err)
@@ -72,7 +78,10 @@ func (node *Node) Stop() {
 	log.Printf("Stop received, Stopping Node...")
 	node.cache.StopCleanup()
 	close(node.stop)
-	node.listener.Close()
+	err := node.listener.Close()
+	if err != nil {
+		log.Fatalf("Failed to close connection: %v", err)
+	}
 }
 
 func (node *Node) ConnectToPeer(addr string) error {
@@ -80,7 +89,11 @@ func (node *Node) ConnectToPeer(addr string) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to peer %s: %w", addr, err)
 	}
-	defer conn.Close()
+
+	defer func() {
+		err := conn.Close()
+		log.Fatalf("Failed to close connection: %v", err)
+	}()
 
 	log.Printf("Connected to Peer at %s", addr)
 

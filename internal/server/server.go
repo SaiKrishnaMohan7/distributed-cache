@@ -90,7 +90,13 @@ func (server *Server) handleSetCommand(responseWriter http.ResponseWriter, req *
 	// Shift left by N bits is equivalent to multiplying by 2^N
 	// Limiting body size to 10 MB (10 * 2^20)
 	req.Body = http.MaxBytesReader(responseWriter, req.Body, 10<<20)
-	defer req.Body.Close()
+
+	defer func() {
+		err := req.Body.Close()
+		if err != nil {
+			log.Fatalf("Failed to close Body: %v", err)
+		}
+	}()
 
 	parsedTTL, err := time.ParseDuration(ttlStr)
 	if err != nil {
