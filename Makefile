@@ -4,6 +4,11 @@ BIN_DIR := bin
 
 .PHONY: build run test clean build-p2p run-p2p fmt lint tidy test-race test-coverage lint-fix check help
 
+install: install-tools deps
+	@echo "📦 Installing pre-commit hooks..."
+	@command -v pre-commit >/dev/null 2>&1 && pre-commit install || echo "⚠️  pre-commit not found, skipping"
+	@echo "✅ Development environment ready"
+
 install-tools:
 	@echo "🔧 Installing development tools..."
 	# Linting & Formatting
@@ -19,10 +24,18 @@ install-tools:
 	@command -v dlv >/dev/null 2>&1 || go install github.com/go-delve/delve/cmd/dlv@latest
 	# Utilities
 	@command -v goplay >/dev/null 2>&1 || go install github.com/haya14busa/goplay/cmd/goplay@latest
-	@command -v pre-commit >/dev/null 2>&1 || brew install pre-commit
+# 	Installed in container with apt-get
+# 	@command -v pre-commit >/dev/null 2>&1 || brew install pre-commit
+	# Pre-commit (requires Python from Dockerfile)
+	@command -v pre-commit >/dev/null 2>&1 || pip3 install --break-system-packages pre-commit
 	# Reshim if using asdf
 	@if command -v asdf >/dev/null 2>&1; then asdf reshim golang; fi
 	@echo "✅ All tools installed"
+
+deps:
+	@echo "📦 Downloading Go dependencies..."
+	go mod download
+	go mod tidy
 
 build:
 	@echo "🔨 Building $(APP_NAME)..."

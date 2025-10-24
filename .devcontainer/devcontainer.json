@@ -1,0 +1,72 @@
+{
+  "name": "Go Distributed Cache",
+  // Use Microsoft's official Go dev container image (latest Go 1.x)
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  // Features to add to the container
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {}
+  },
+  // VS Code customizations
+  "customizations": {
+    "vscode": {
+      "settings": {
+        // Go-specific settings
+        "go.useLanguageServer": true,
+        "go.lintOnSave": "workspace",
+        "go.vetOnSave": "workspace",
+        "go.formatTool": "goimports",
+        "go.lintTool": "golangci-lint",
+        "go.lintFlags": [
+          "--fast"
+        ],
+        // Format on save
+        "[go]": {
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+          }
+        },
+        // Editor
+        "editor.rulers": [
+          80,
+          120
+        ],
+        "editor.tabSize": 2,
+        "editor.insertSpaces": false,
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true
+      },
+      // Extensions installed in container (Go-specific only)
+      // Your global "infra" extensions stay on host
+      "extensions": [
+        // Go language
+        "golang.go",
+        // Markdown (project docs)
+        "yzhang.markdown-all-in-one"
+      ]
+    }
+  },
+  // Port forwarding for your cache server
+  "forwardPorts": [
+    42069,
+    8080
+  ],
+  "portsAttributes": {
+    "42069": {
+      "label": "Cache Server"
+    },
+    "8080": {
+      "label": "P2P Node"
+    }
+  },
+  // Run commands after container is created
+  "postCreateCommand": "make install",
+  // Mount your .gitconfig and ssh keys
+  "mounts": [
+    "source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,readonly,type=bind,consistency=cached"
+  ]
+}
